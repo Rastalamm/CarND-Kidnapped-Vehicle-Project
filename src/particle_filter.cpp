@@ -59,12 +59,36 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 
+    // Lesson 14.6 - 14.8
+    default_random_engine gen;
+
+    double std_x = std_pos[0];
+    double std_y = std_pos[1];
+    double std_theta = std_pos[2];
+    // This line creates a normal (Gaussian) distribution for x, y and theta
+    normal_distribution<double> dist_x(0, std_x);
+    normal_distribution<double> dist_y(0, std_y);
+    normal_distribution<double> dist_theta(0, std_theta);
+
+    if (yaw_rate < 0.0001) {
+        yaw_rate = 0.0001;
+    }
+
+    // Update values of x, y, and theta using equations from lesson
+    for (int i = 0; i < num_particles; i++) {
+
+        particles[i].x = particles[i].x + (velocity / yaw_rate) * (sin(particles[i].theta + yaw_rate * delta_t) - sin(particles[i].theta)) + dist_x(gen);
+
+        particles[i].y = particles[i].y + (velocity / yaw_rate) * (cos(particles[i].theta) - cos(particles[i].theta + yaw_rate * delta_t)) + dist_y(gen);
+
+        particles[i].theta = particles[i].theta + yaw_rate * delta_t + dist_y(gen);
+    }
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
-	// TODO: Find the predicted measurement that is closest to each observed measurement and assign the 
+	// TODO: Find the predicted measurement that is closest to each observed measurement and assign the
 	//   observed measurement to this particular landmark.
-	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
+	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to
 	//   implement this method and use it as a helper during the updateWeights phase.
 
 }
