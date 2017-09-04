@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <iostream>
 #include <numeric>
-#include <math.h> 
+#include <math.h>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -20,11 +20,37 @@
 using namespace std;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
-	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of 
-	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
+	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of
+	//   x, y, theta and their uncertainties from GPS) and all weights to 1.
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
+    num_particles  = 75;
 
+    // Lesson 14.5
+
+    default_random_engine gen;
+
+    double std_x = std[0];
+    double std_y = std[1];
+    double std_theta = std[2];
+    // This line creates a normal (Gaussian) distribution for x, y and theta
+    normal_distribution<double> dist_x(x, std_x);
+    normal_distribution<double> dist_y(y, std_y);
+    normal_distribution<double> dist_theta(theta, std_theta);
+
+    for (int i = 0; i < num_particles; i++) {
+        Particle sample_particle;
+
+        sample_particle.id = i;
+        sample_particle.x = dist_x(gen);
+        sample_particle.y = dist_y(gen);
+        sample_particle.theta = dist_theta(gen);
+
+        particles.push_back(sample_particle);
+        weights.push_back(1);
+    }
+
+    is_initialized = true;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
