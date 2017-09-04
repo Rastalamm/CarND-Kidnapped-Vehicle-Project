@@ -93,7 +93,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 
 }
 
-void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
+void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		std::vector<LandmarkObs> observations, Map map_landmarks) {
 	// TODO: Update the weights of each particle using a mult-variate Gaussian distribution. You can read
 	//   more about this distribution here: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
@@ -102,9 +102,62 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   Keep in mind that this transformation requires both rotation AND translation (but no scaling).
 	//   The following is a good resource for the theory:
 	//   https://www.willamette.edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm
-	//   and the following is a good resource for the actual equation to implement (look at equation 
+	//   and the following is a good resource for the actual equation to implement (look at equation
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
+
+    //for each particle
+    for (int i = 0; i < num_particles; i++) {
+
+        double weight = 1;
+
+        // Transform the observations to map space to match the particle spave
+        // http://planning.cs.uiuc.edu/node99.html
+        // Lesson 14.15
+        // for each observation
+        for (int j = 0; j < observations.size(); j++) {
+
+            double transformed_x = observations[j].x * cos(particles[i].theta) - observations[j].y * sin(particles[i].theta) + particles[i].x;
+            double transformed_y = observations[j].y * cos(particles[i].theta) + observations[j].x * sin(particles[i].theta) + particles[i].y;
+
+            Map::single_landmark_s nearest_landmark;
+            double min_sensor_distance = sensor_range;
+
+            //calculating the distance between landmarks and transformed observations
+            // for each landmark
+            for (int k = 0; k < map_landmarks.landmark_list.size(); k++) {
+
+                Map::single_landmark_s current_landmark = map_landmarks.landmark_list[k];
+                double distance = fabs(transformed_x - current_landmark.x_f) + fabs(transformed_y - current_landmark.y_f);
+
+                // looking at neatest landmark which matches with the observations
+                if (distance < min_sensor_distance) {
+                    min_sensor_distance = distance;
+                    nearest_landmark = current_landmark;
+                }
+            }
+
+            // Calculate weight using Normal Distribution
+            // https://en.wikipedia.org/wiki/Multivariate_normal_distribution
+            long double prob = exp(-0.5 *
+                (
+                    (
+                        (nearest_landmark.x_f - transformed_x) * (nearest_landmark.x_f - transformed_x)
+                    )
+                / (std_landmark[0] * std_landmark[0]) +
+                    (
+                        (nearest_landmark.y_f - transformed_y) * (nearest_landmark.y_f - transformed_y)
+                    )
+                / (std_landmark[1] * std_landmark[1]))
+                );
+
+            long double norm_const = 2 * M_PI * std_landmark[0] * std_landmark[1];
+            weight *= prob / norm_const;
+        }
+
+        particles[i].weight = weight;
+        weights[i] = weight;
+    }
 }
 
 void ParticleFilter::resample() {
